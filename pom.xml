@@ -30,12 +30,12 @@
         	<repository>
             		<id>mmariuzzo-releases</id>
             		<name>mmariuzzo-releases</name>
-            		<url>https://maven.pkg.github.com/mmariuzzo/test-java/</url>
+            		<url>https://maven.pkg.github.com/mmariuzzo/test-java</url>
         	</repository>
         	<snapshotRepository>
             		<id>mmariuzzo-snapshots</id>
             		<name>mmariuzzo-snapshots</name>
-            		<url>https://maven.pkg.github.com/mmariuzzo/test-java/</url>
+            		<url>https://maven.pkg.github.com/mmariuzzo/test-java</url>
 	        </snapshotRepository>
 	</distributionManagement>
 	
