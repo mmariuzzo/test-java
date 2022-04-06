@@ -13,6 +13,32 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Relying Party Sample</name>
 	<description>Relying Party Sample project for Spring Boot</description>
+	
+	<inceptionYear>2020</inceptionYear>
+	<issueManagement>
+        	<system>GitHub</system>
+        	<url>https://github.com/mmariuzzo/test-java/issues</url>
+    	</issueManagement>
+	
+	<scm>
+        	<connection>scm:git:https://github.com/mmariuzzo/test-java.git</connection>
+        	<developerConnection>scm:git:ssh://git@github.com:mmariuzzo/test-java.git</developerConnection>
+        	<url>https://github.com/mmariuzzo/test-java</url>
+	</scm>
+	
+	<distributionManagement>
+        	<repository>
+            		<id>mmariuzzo-releases</id>
+            		<name>mmariuzzo-releases</name>
+            		<url>https://maven.pkg.github.com/mmariuzzo/test-java/</url>
+        	</repository>
+        	<snapshotRepository>
+            		<id>mmariuzzo-snapshots</id>
+            		<name>mmariuzzo-snapshots</name>
+            		<url>https://maven.pkg.github.com/mmariuzzo/test-java/</url>
+	        </snapshotRepository>
+	</distributionManagement>
+	
 	<properties>
 		<java.version>11</java.version>
 	</properties>
