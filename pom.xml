@@ -8,6 +8,12 @@
 	<packaging>pom</packaging>
 	<version>0.1.0-SNAPSHOT</version>
 
+	<properties>
+		<java.version>11</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<jacoco-maven-plugin.version>0.8.7</jacoco-maven-plugin.version>
+	</properties>
+
 	<licenses>
 		<license>
 			<name>Apache 2</name>
@@ -29,6 +35,7 @@
 	<modules>
 		<module>starter-kit</module>
 		<module>examples</module>
+		<module>coverage</module>
 	</modules>
 
 	<distributionManagement>
@@ -43,11 +50,6 @@
 			<url>https://maven.pkg.github.com/mmariuzzo/test-java</url>
 		</snapshotRepository>
 	</distributionManagement>
-
-	<properties>
-		<java.version>11</java.version>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
 
 	<dependencies>
 		<!-- JOSE + JWT -->
@@ -86,22 +88,45 @@
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.22.1</version>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.2.1</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-failsafe-plugin</artifactId>
-				<version>2.22.1</version>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>2.8.2</version>
+				<configuration>
+					<deployAtEnd>true</deployAtEnd>
+				</configuration>
 			</plugin>
-			<!--
-			TODO: inject license using com.mycile:license-maven-plugin:4.1
-			-->
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.0.0-M5</version>
+				<configuration>
+					<forkedProcessExitTimeoutInSeconds>60</forkedProcessExitTimeoutInSeconds>
+					<forkCount>0</forkCount>
+					<systemPropertyVariables>
+						<org.slf4j.simpleLogger.defaultLogLevel>warn</org.slf4j.simpleLogger.defaultLogLevel>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+
 		</plugins>
 
 		<pluginManagement>
 			<plugins>
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-assembly-plugin</artifactId>
 					<version>3.3.0</version>
 					<executions>
@@ -126,15 +151,17 @@
 					</executions>
 				</plugin>
 
+<!--
 				<plugin>
 					<artifactId>maven-deploy-plugin</artifactId>
 					<version>2.8.2</version>
 				</plugin>
+-->
 
 				<plugin>
 					<groupId>com.spotify</groupId>
 					<artifactId>docker-maven-plugin</artifactId>
-					<version>1.4.13</version>
+					<version>1.2.2</version>
 				</plugin>
 
 				<plugin>
@@ -152,7 +179,59 @@
 						</execution>
 					</executions>
 				</plugin>
+
 			</plugins>
 		</pluginManagement>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>coverage</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>${jacoco-maven-plugin.version}</version>
+						<configuration>
+							<excludes>
+								<exclude>**/static/*</exclude>
+								<exclude>**/*.bat</exclude>
+								<exclude>**/*.sh</exclude>
+								<exclude>**/*.md</exclude>
+								<exclude>**/*.yml</exclude>
+								<exclude>**/*.yaml</exclude>
+								<exclude>LICENCE</exclude>
+							</excludes>
+						</configuration>
+						<executions>
+							<execution>
+								<id>prepare-unit</id>
+								<goals>
+									<goal>prepare-agent</goal>
+								</goals>
+								<configuration>
+									<excludes>
+										<exclude>**/SqlParserTokenManager.class</exclude>
+									</excludes>
+								</configuration>
+							</execution>
+							<execution>
+								<id>report</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>report</goal>
+								</goals>
+								<configuration>
+									<excludes>
+										<exclude>**/SqlParserTokenManager.class</exclude>
+									</excludes>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
