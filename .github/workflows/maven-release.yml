@@ -32,6 +32,6 @@ jobs:
         git config user.name "GitHub Actions"
 
     - name: Release and Publish jar
-      run: ./mvnw --no-transfer-progress -B release:prepare release:perform -Dskip.test=true -s $GITHUB_WORKSPACE/settings.xml
+      run: ./mvnw --no-transfer-progress -B release:prepare release:perform -DskipTest=true -Dmaven.javadoc.skip=true -s $GITHUB_WORKSPACE/settings.xml
       env:
         GITHUB_TOKEN: ${{ github.token }}
