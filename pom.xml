@@ -29,7 +29,7 @@
 
 	<scm>
 		<connection>scm:git:https://github.com/mmariuzzo/test-java.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com:mmariuzzo/test-java.git</developerConnection>
+		<developerConnection>scm:git:https://github.com/mmariuzzo/test-java.git</developerConnection>
 		<url>https://github.com/mmariuzzo/test-java</url>
 	</scm>
 
