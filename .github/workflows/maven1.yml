@@ -40,6 +40,6 @@ jobs:
 
     - name: Publish to GitHub Snapshot Packages
       if: github.event_name != 'pull_request'
-      run: mvn -B deploy -Dgpg.skip=true -DskipTests=true -s $GITHUB_WORKSPACE/settings.xml
+      run: mvn deploy -Pcoverage --batch-mode  --errors --fail-at-end --show-version  -DskipTests=true -s $GITHUB_WORKSPACE/settings.xml
       env:
           GITHUB_TOKEN: ${{ github.token }}
