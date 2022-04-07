@@ -2,67 +2,54 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.4</version>
-		<relativePath/> <!-- lookup parent from repository -->
-	</parent>
-	<groupId>it.spid.cie.oidc.spring.boot</groupId>
-	<artifactId>relying-party-sample</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>Relying Party Sample</name>
-	<description>Relying Party Sample project for Spring Boot</description>
-	
+
+	<groupId>it.spid.cie.oidc</groupId>
+	<artifactId>starter-kit-parent</artifactId>
+	<packaging>pom</packaging>
+	<version>0.1.0-SNAPSHOT</version>
+
+	<licenses>
+		<license>
+			<name>Apache 2</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
 	<inceptionYear>2020</inceptionYear>
 	<issueManagement>
-        	<system>GitHub</system>
-        	<url>https://github.com/mmariuzzo/test-java/issues</url>
-    	</issueManagement>
-	
+		<system>GitHub</system>
+		<url>https://github.com/mmariuzzo/test-java/issues</url>
+	</issueManagement>
+
 	<scm>
-        	<connection>scm:git:https://github.com/mmariuzzo/test-java.git</connection>
-        	<developerConnection>scm:git:ssh://git@github.com:mmariuzzo/test-java.git</developerConnection>
-        	<url>https://github.com/mmariuzzo/test-java</url>
+		<connection>scm:git:https://github.com/mmariuzzo/test-java.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com:mmariuzzo/test-java.git</developerConnection>
+		<url>https://github.com/mmariuzzo/test-java</url>
 	</scm>
-	
+
+	<modules>
+		<module>starter-kit</module>
+		<module>examples</module>
+	</modules>
+
 	<distributionManagement>
-        	<repository>
-            		<id>mmariuzzo-releases</id>
-            		<name>mmariuzzo-releases</name>
-            		<url>https://maven.pkg.github.com/mmariuzzo/test-java</url>
-        	</repository>
-        	<snapshotRepository>
-            		<id>mmariuzzo-snapshots</id>
-            		<name>mmariuzzo-snapshots</name>
-            		<url>https://maven.pkg.github.com/mmariuzzo/test-java</url>
-	        </snapshotRepository>
+		<repository>
+			<id>github-releases</id>
+			<name>github-releases</name>
+			<url>https://maven.pkg.github.com/mmariuzzo/test-java</url>
+		</repository>
+		<snapshotRepository>
+			<id>github-snapshots</id>
+			<name>github-snapshots</name>
+			<url>https://maven.pkg.github.com/mmariuzzo/test-java</url>
+		</snapshotRepository>
 	</distributionManagement>
-	
+
 	<properties>
 		<java.version>11</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+
 	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-
-		<!-- Hypersonic embedded -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-
 		<!-- JOSE + JWT -->
 		<dependency>
 			<groupId>com.nimbusds</groupId>
@@ -76,21 +63,96 @@
 			<artifactId>json</artifactId>
 			<version>20211205</version>
 		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>versions-maven-plugin</artifactId>
+				<version>2.5</version>
+				<configuration>
+					<generateBackupPoms>false</generateBackupPoms>
+				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.10.0</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.22.1</version>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>2.22.1</version>
+			</plugin>
+			<!--
+			TODO: inject license using com.mycile:license-maven-plugin:4.1
+			-->
 		</plugins>
-	</build>
 
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<artifactId>maven-assembly-plugin</artifactId>
+					<version>3.3.0</version>
+					<executions>
+						<execution>
+							<id>distribution-package</id>
+							<phase>package</phase>
+							<goals>
+								<goal>single</goal>
+							</goals>
+							<configuration>
+								<appendAssemblyId>false</appendAssemblyId>
+								<descriptors>
+									<descriptor>./src/main/assembly/archive.xml</descriptor>
+								</descriptors>
+								<filters>
+									<filter></filter>
+								</filters>
+								<ignoreDirFormatExtensions>false</ignoreDirFormatExtensions>
+								<tarLongFileMode>gnu</tarLongFileMode>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+
+				<plugin>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>2.8.2</version>
+				</plugin>
+
+				<plugin>
+					<groupId>com.spotify</groupId>
+					<artifactId>docker-maven-plugin</artifactId>
+					<version>1.4.13</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>3.2.2</version>
+					<configuration>
+						<skipIfEmpty>true</skipIfEmpty>
+					</configuration>
+					<executions>
+						<execution>
+							<goals>
+								<goal>test-jar</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
 </project>
