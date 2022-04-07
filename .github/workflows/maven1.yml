@@ -16,7 +16,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up JDK 11
+    
+    - name: Set up JDK 11 PR
+      if: github.event_name == 'pull_request'
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+        cache: maven
+        
+    - name: Set up JDK 11 Push
+      if: github.event_name != 'pull_request'
       uses: actions/setup-java@v3
       with:
         java-version: '11'
@@ -28,7 +38,8 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
       
-    - name: Publish to GitHub Packages Apache Maven
+    - name: Publish to GitHub Snapshot Packages
+      if: github.event_name != 'pull_request'
       run: mvn -B deploy -Dgpg.skip=true -DskipTests=true -s $GITHUB_WORKSPACE/settings.xml
       env:
           GITHUB_TOKEN: ${{ github.token }}
