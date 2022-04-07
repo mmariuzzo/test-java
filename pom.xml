@@ -187,6 +187,7 @@
 					<version>${maven.release.version}</version>
 					<configuration>
 						<autoVersionSubmodules>true</autoVersionSubmodules>
+						<scmCommentPrefix>[skip actions]</scmCommentPrefix>
 						<tagNameFormat>v{project.version}</tagNameFormat>
 					</configuration>
 				</plugin>
