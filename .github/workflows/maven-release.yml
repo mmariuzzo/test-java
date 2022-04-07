@@ -24,7 +24,7 @@ jobs:
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
     - name: Build with Maven
-      run: mvnw -B package --file pom.xml
+      run: ./mvnw -B package --file pom.xml
 
     - name: Configure Git user
       run: |
@@ -32,6 +32,6 @@ jobs:
         git config user.name "GitHub Actions"
 
     - name: Release and Publish jar
-      run: mvnw -B release:prepare release:perform
+      run: ./mvnw -B release:prepare release:perform
       env:
         GITHUB_TOKEN: ${{ github.token }}
