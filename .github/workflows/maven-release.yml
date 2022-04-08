@@ -48,9 +48,9 @@ jobs:
 
     - name: Release and Publish jar (Minor)
       if: github.event.inputs.bump-mode == 'minor'
-      run: >
-        ./mvnw --no-transfer-progress -B build-helper:parse-version 
-          release:prepare -DdevelopmentVersion=\${parsedVersion.majorVersion}.\${parsedVersion.nextMinorVersion}.0-SNAPSHOT
+      run: |
+        ./mvnw --no-transfer-progress -B build-helper:parse-version \
+          release:prepare -DdevelopmentVersion=\${parsedVersion.majorVersion}.\${parsedVersion.nextMinorVersion}.0-SNAPSHOT \
           release:perform -DskipTest=true -s $GITHUB_WORKSPACE/settings.xml
       env:
         GITHUB_TOKEN: ${{ github.token }}
