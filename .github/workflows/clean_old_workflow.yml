@@ -1,3 +1,5 @@
+# Remove actions workflow older than x days
+
 name: Clean Workflow Logs
 
 on:
