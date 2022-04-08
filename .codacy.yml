@@ -1,0 +1,12 @@
+---
+exclude_paths:
+  - "**/static/**"
+  - "**/*.js"
+  - "**/*.css"
+  - "**/*.html"
+  - "**/*.zip"
+  - "**/*.tgz"
+  - "**/*.sh"
+  - "**/*.bat"
+  - "**/*.md"
+  - "settings.xml"
