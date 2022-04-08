@@ -6,7 +6,7 @@ name: Maven Tag for Release
 on:
   workflow_dispatch:
     branches: [ main ]
-    input:
+    inputs:
       bump-mode:
         type: choice
         description: Set rule for next development version
