@@ -166,7 +166,7 @@ public class RelyingPartyHandler {
 		}
 
 		if (Validator.isNullOrEmpty(scope)) {
-			scope = Scope.OPEN_ID.getValue();
+			scope = Scope.OPEN_ID.value();
 		}
 
 		if (Validator.isNullOrEmpty(prompt)) {
