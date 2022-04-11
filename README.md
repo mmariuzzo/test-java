@@ -4,6 +4,7 @@
 [![Join the #spid openid](https://img.shields.io/badge/Slack%20channel-%23spid%20openid-blue.svg)](https://developersitalia.slack.com/archives/C7E85ED1N/)
 ![Apache license](https://img.shields.io/badge/license-Apache%202-blue.svg)
 [![CodeQL](https://github.com/italia/spid-cie-oidc-java/actions/workflows/codeql.yml/badge.svg)](https://github.com/italia/spid-cie-oidc-java/actions/workflows/codeql.yml)
+[![codecov](https://codecov.io/gh/mmariuzzo/test-java/branch/main/graph/badge.svg?token=NHBXULTD6N)](https://codecov.io/gh/mmariuzzo/test-java)
 
 **SPID/CIE OIDC Federation** is a **starter kit** and **example projects** designed to ease the creation of an OpenID Connect Federation.
 
