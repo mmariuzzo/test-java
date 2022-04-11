@@ -7,30 +7,32 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 
 import it.spid.cie.oidc.config.OIDCConstants;
 import it.spid.cie.oidc.config.RelyingPartyOptions;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
 
 public class TestEntityHelper {
 
-	private static MockWebServer mockServer;
+	private static WireMockServer wireMockServer;
 
-	@Before
-	public void setUp() throws IOException {
-		mockServer = new MockWebServer();
-		mockServer.start();
+	@BeforeClass
+	public static void setUp() throws IOException {
+		wireMockServer = new WireMockServer();
+
+		wireMockServer.start();
+
+		System.out.println("mock=" + wireMockServer.baseUrl());
 	}
 
-	@After
-	public void tearDown() throws IOException {
-		mockServer.shutdown();
+	@AfterClass
+	public static void tearDown() throws IOException {
+		wireMockServer.stop();
 	}
 
 	@SuppressWarnings("static-access")
@@ -42,21 +44,25 @@ public class TestEntityHelper {
 
 		assertNotNull(helper);
 
-		String url =
-			"http://localhost:" + mockServer.getPort() + "/" +
-			OIDCConstants.OIDC_FEDERATION_WELLKNOWN_URL;
+		wireMockServer.resetAll();
 
+		String url = getBaseHttpURL();
 		boolean catched = false;
 		String fakeResponse = "fake-response";
 		String res = "";
 
-		try {
-			mockServer.enqueue(
-				new MockResponse().setBody(fakeResponse));
+		wireMockServer.stubFor(
+			WireMock.get(
+				"/" + OIDCConstants.OIDC_FEDERATION_WELLKNOWN_URL
+			).willReturn(
+				WireMock.ok(fakeResponse)
+			));
 
+		try {
 			res = helper.getEntityConfiguration(url);
 		}
 		catch (Exception e) {
+			System.out.println(e);
 			catched = true;
 		}
 
@@ -73,19 +79,20 @@ public class TestEntityHelper {
 
 		assertNotNull(helper);
 
-		String url =
-			"http://localhost:" + mockServer.getPort() + "/" +
-			OIDCConstants.OIDC_FEDERATION_WELLKNOWN_URL;
+		wireMockServer.resetAll();
 
+		String url = getBaseHttpURL();
 		boolean catched = false;
-		String fakeResponse = "fake-response";
-		String res = "";
+
+		wireMockServer.stubFor(
+			WireMock.get(
+				"/" + OIDCConstants.OIDC_FEDERATION_WELLKNOWN_URL
+			).willReturn(
+				WireMock.forbidden()
+			));
 
 		try {
-			mockServer.enqueue(
-				new MockResponse().setBody(fakeResponse).setResponseCode(403));
-
-			res = helper.getEntityConfiguration(url);
+			helper.getEntityConfiguration(url);
 		}
 		catch (Exception e) {
 			catched = true;
@@ -103,17 +110,21 @@ public class TestEntityHelper {
 
 		assertNotNull(helper);
 
-		String url =
-			"http://localhost:" + mockServer.getPort() + "/test";
+		wireMockServer.resetAll();
 
+		String url = getBaseHttpURL();
 		boolean catched = false;
 		String fakeResponse = "fake-response";
 		String res = "";
 
-		try {
-			mockServer.enqueue(
-				new MockResponse().setBody(fakeResponse));
+		wireMockServer.stubFor(
+			WireMock.get(
+				"/"
+			).willReturn(
+				WireMock.ok(fakeResponse)
+			));
 
+		try {
 			res = helper.getEntityStatement(url);
 		}
 		catch (Exception e) {
@@ -133,24 +144,30 @@ public class TestEntityHelper {
 
 		assertNotNull(helper);
 
-		String url =
-			"http://localhost:" + mockServer.getPort() + "/test";
+		wireMockServer.resetAll();
 
+		String url = getBaseHttpURL();
 		boolean catched = false;
-		String fakeResponse = "fake-response";
-		String res = "";
+
+		wireMockServer.stubFor(
+			WireMock.get(
+				"/"
+			).willReturn(
+				WireMock.forbidden()
+			));
 
 		try {
-			mockServer.enqueue(
-				new MockResponse().setBody(fakeResponse).setResponseCode(403));
-
-			res = helper.getEntityStatement(url);
+			helper.getEntityStatement(url);
 		}
 		catch (Exception e) {
 			catched = true;
 		}
 
 		assertTrue(catched);
+	}
+
+	private String getBaseHttpURL() {
+		return "http://127.0.0.1:" + wireMockServer.port() + "/";
 	}
 
 }
