@@ -56,6 +56,8 @@ The SpringBoot example project uses H2 as database engine and interact with it u
 * there are annotated model classes able to marshalling/unmarshalling with starter-kit models
 * the class implementing PersistenceAdapter interact with data framework to store the information or to find it. 
 
+> Take a look to `/examples/relying-party-spring-boot/src/main/resources/sql/schema.sql` for the sample database entities structure  
+
 
 ## Configuration Options
 
