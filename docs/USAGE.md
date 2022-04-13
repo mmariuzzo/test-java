@@ -1,5 +1,9 @@
 # SPID/CIE OIDC Federation Starter Kit
 
+> Actually only RelyingParty _role_ is managed. The following documentation is focused on that role.
+
+<br/>
+
 Both Snapshots and Released artifacts are available on [GitHub Packages](https://github.com/orgs/italia/packages?repo_name=spid-cie-oidc-java):
 
 * if you use Maven
@@ -18,7 +22,7 @@ Both Snapshots and Released artifacts are available on [GitHub Packages](https:/
 implementation group: 'it.spid.cie.oidc', name: 'it.spid.cie.oidc.starter.kit', version: 'xxx'
 ```
 
-Unfortunately, as stated in the [documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-to-github-packages), to use GitHub packages you have define GitHub repository in your `~/.m2/settings.xml` together with your credentials.
+Unfortunately, as stated in the [documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry#authenticating-to-github-packages), to use GitHub packages you have define GitHub repository in your `~/.m2/settings.xml` (or `settings.gradle`) together with your credentials.
 
 
 The "starter-kit" is a _backend_ library with few dependencies:
@@ -26,6 +30,7 @@ The "starter-kit" is a _backend_ library with few dependencies:
 * [`com.nimbusds:nimbus-jose-jwt`](https://connect2id.com/products/nimbus-jose-jwt), the most popular java Library to manage JSON Web Token (JWT, JWE, JWS)
 * [`com.github.stephenc.jcip:jcip-annotations:1.0-1`](https://mvnrepository.com/artifact/com.github.stephenc.jcip/jcip-annotations/1.0-1), a clean room implementation of the JCIP Annotations
 * [`org.slf4j:slf4j-api`](https://mvnrepository.com/artifact/org.slf4j/slf4j-api)
+
 
 
 ## PersistenceAdapter
@@ -46,8 +51,8 @@ Every model contains these _helping_ attributes:
 * `modifiedDate`
 * `storageId`
 
-
-The SpringBoot example project uses H2 as database engine and interact with it using a specific SpringBoot data framework. In the example:
+<br/>
+The SpringBoot example project uses H2 as database engine and interact with it using a SpringBoot specific data framework. In the example:
 * there are annotated model classes able to marshalling/unmarshalling with starter-kit models
 * the class implementing PersistenceAdapter interact with data framework to store the information or to find it. 
 
@@ -89,6 +94,27 @@ The starter-kit throws different application Exceptions but all of them are or e
 This allows you code to be more flexible: you don't have to change method signature when a new kind of OIDCExcetion will be implemented.
 
 
+## HTTP EndPoint
+
+The starter-kit doesn't expose the web-servlet: it delegates to the implementer this job.
+
+Your application can use preferred framework to expose the required endpoints and, internally, call `RelyingPartyHandler` to process datas. The required endpoints are:
+* `.well-known/openid-fedaration`. Is the only one with a fixed name and is used to expose federation entity informations to other federation entities   
+* `authentication`. This endpoint is the starting point for OIDC SPID/CIE authentication. The webpath is customizable. Is used inside you application UI on "SignIn with SPID" and "SignIn with CIE" buttons. The request is of type GET and supports the following parameters:
+  - `provider`, REQUIRED. The http url corresponding to a subject id of a SPID/CIE OIDC Provider.
+  - `redirect_uri`, OPTIONAL. One of the redirect_uri available in RP's metadata.
+  - `scope`, OPTIONAL. One or more of the scopes, default is openid.
+  - `consent`, OPTIONAL. Sets SPID or CIE extended consent values.
+  - `trust_anchor`, OPTIONAL. Sets the Trust Anchor to resolve the Federation. Default is `options.defaultTrustAnchor`.
+  - `acr_values`, OPTIONAL.
+  - `profile`, OPTIONAL. Default: spid. Set (spid, cie)
+
+* `authn_callback`. This endpoint corresponds to the redirect uri where the auth code lands. The webpath is customizable and have to be setted in `options.redirectUris`. This endpoint accepts a request with this parameters:
+  - `code`, REQUIRED. Authorization code
+  - `state`, REQUIRED. State value enclosed in the authentication request
+
+* `logout`. This endpoint starts a token revocation flow. The webpath is customizable. 
+
 
 ## RelyingParty Handler
 
@@ -101,4 +127,38 @@ RelyingPartyHandler handler = new RelyingPartyHandler(options, persistenceAdapte
 ```
 
 A good approach is to instantiate only one handler per application (or per tenant) and to re-instantiate it when configuration changes.
+
+The `RelyingPartyHandler` manages these following aspects
+
+#### generate the JSON Web Key needed for on-boarding
+
+If you istantiate `RelyingPartyOptions` with no `<RELYING_PARTY_JWK>` the following call
+
+```java
+WellKnowData wellKnown = handler.getWellKnownData(true)
+```
+
+generates a JWON Web Key (JWK) and return it inside the [`WellKnowData`](/starter-kit/src/main/java/it/spid/cie/oidc/schemas/WellKnownData.java) object as json string.
+
+This information have to be managed by your application (stored somewhere) to be reused to re-instantiate `RelyingPartyOptions` and `RelyingPartyHandler`.
+
+
+### build intermediate well known federation configuration
+
+If you istantiate `RelyingPartyOptions` with `<RELYING_PARTY_JWK>` and no `<RELYING_PARTY_TRUST_MARKS>` your RelyingParty is in an _intermediate_ on-boarding status. 
+
+The starter-kit exposes two methods
+
+```java
+public WellKnownData getWellKnownData(boolean jsonMode) throws OIDCException;
+
+public WellKnownData getWellKnownData(String requestURL, boolean jsonMode) throws OIDCException;
+```
+
+The second one is more suitable to be used in a While the first on use the The seconds one first one is suitable for ` to get the WellKnown data inside configuration flows
+* `public WellKnownData getWellKnownData(String requestURL, boolean jsonMode) throws OIDCException` to 
+
+
+
+
 
