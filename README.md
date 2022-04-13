@@ -46,7 +46,7 @@ Actually only "**OpenID Connect Relying Party**" _role_ is managed. The starter-
 * UserInfo claims retrieving
 * Build (discover) TrustChain of OPs
 * Multitenancy
-* see [Usage](#usage) for a more detailed list
+* see [Usage](docs/USAGE.md) for a more detailed list
 
 
 The "**OpenID Connect Provider**" _role_ is in my thoughts. Several requirements are already covered by the current starter-kit and the missing aspects should not require lot effort.
@@ -79,12 +79,7 @@ The "starter-kit" is a _backend_ library with few dependencies:
 * [`org.slf4j:slf4j-api`](https://mvnrepository.com/artifact/org.slf4j/slf4j-api)
 
 
-TODO: Describe `PersistenceAdapter`
-- describe entities, provide SQL
-
-TODO: Describe `RelyingPartyOptions` and `GeneralOptions`
-
-TODO: Describe `RelyingPartyHandler`
+go [here](docs/USAGE.md) for more detailed information
 
 
 
@@ -133,10 +128,6 @@ Please open your Pull Request on the __main__ branch, but before start coding op
 In this project we adopt [Semver](https://semver.org/lang/it/) and
 [Conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) specifications.
 
-
-## About this implementation
-
-TODO: few notes about the profiles supported and how they was implemented.
 
 
 ## License and Authors
