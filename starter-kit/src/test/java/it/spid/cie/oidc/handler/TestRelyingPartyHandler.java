@@ -44,7 +44,6 @@ import it.spid.cie.oidc.handler.extras.MemoryStorage;
 import it.spid.cie.oidc.handler.extras.MockRelyingPartyLogoutCallback;
 import it.spid.cie.oidc.helper.JWTHelper;
 import it.spid.cie.oidc.model.AuthnToken;
-import it.spid.cie.oidc.model.FederationEntity;
 import it.spid.cie.oidc.model.TrustChain;
 import it.spid.cie.oidc.schemas.OIDCProfile;
 import it.spid.cie.oidc.schemas.ProviderButtonInfo;
@@ -353,7 +352,6 @@ public class TestRelyingPartyHandler {
 
 	protected void doTestLoginLogout2(MemoryStorage storage) {
 		boolean catched = false;
-		String url = "";
 		RelyingPartyOptions options = null;
 		RelyingPartyHandler handler = null;
 
@@ -397,12 +395,11 @@ public class TestRelyingPartyHandler {
 
 			handler = new RelyingPartyHandler(options, storage);
 
-			url = handler.getAuthorizeURL(
+			handler.getAuthorizeURL(
 				SPID_PROVIDER, null, null, null, null, null);
 		}
 		catch (Exception e) {
-			//System.err.println(e);
-			e.printStackTrace();
+			//e.printStackTrace();
 			catched = true;
 		}
 
