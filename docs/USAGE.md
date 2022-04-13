@@ -136,7 +136,7 @@ A good approach is to instantiate only one handler per application (or per tenan
 
 The `RelyingPartyHandler` manages these following aspects:
 * [Federation OnBoarding](#federation-onboarding)
-* [Authentication Flow]((#authentication-flow)
+* [Authentication Flow](#authentication-flow)
 * [Revocation Flow](#revocation-flow)
 * [Provider Button Infos](#provider-button-infos)
 
