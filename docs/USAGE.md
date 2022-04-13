@@ -241,6 +241,9 @@ If something goes wrong in this process an OIDCException is thrown; otherwise yo
 - create or update the User profile inside the application database
 - redirect the user to the right landing page 
 
+> Your application is the _real_ owner of the logger user profile information. Is responsability of your application to merge it when user sign in with different providers.
+
+
 
 ### Revocation Flow
 
@@ -279,3 +282,5 @@ Every `ProviderButtonInfo` contains:
 
 
 To provide these information the handler use the TrustChain model it has of the provider. It could be the one already stored in the database, via PersistenceAdapter, or the one builded on the fly (if the stored one is absent or invalid) and than stored.
+
+
