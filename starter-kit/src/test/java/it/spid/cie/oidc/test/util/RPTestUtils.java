@@ -1,5 +1,6 @@
 package it.spid.cie.oidc.test.util;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -7,6 +8,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWEAlgorithm;
 import com.nimbusds.jose.JWEHeader;
 import com.nimbusds.jose.JWEObject;
@@ -19,6 +21,7 @@ import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 
 import it.spid.cie.oidc.config.RelyingPartyOptions;
@@ -84,6 +87,13 @@ public class RPTestUtils extends TestUtils {
 
 		// Serialize to compact form
 		return jwsObject.serialize();
+	}
+
+	public static JWKSet createJWKSet() throws Exception {
+		RSAKey rsaKey1 = JWTHelper.createRSAKey(JWSAlgorithm.RS256, KeyUse.SIGNATURE);
+		//RSAKey rsaKey2 = JWTHelper.createRSAKey(null, KeyUse.ENCRYPTION);
+
+		return new JWKSet(Arrays.asList(rsaKey1));
 	}
 
 	public static RelyingPartyOptions getOptions() throws Exception {
@@ -338,5 +348,48 @@ public class RPTestUtils extends TestUtils {
 		return new JSONObject(getContent("ta-private-jwks.json"));
 	}
 
+	public static JSONObject mockedTrustMark(JWKSet jwkSet, String id) throws Exception {
+		if (jwkSet == null) {
+			jwkSet = createJWKSet();
+		}
 
+		JSONObject payload = new JSONObject()
+			.put("iss", TRUST_ANCHOR)
+			.put("sub", SPID_PROVIDER)
+			.put("iat", makeIssuedAt())
+			.put("id", "https://www.spid.gov.it/certification/op")
+			.put("mark", "https://www.agid.gov.it/themes/custom/agid/logo.svg")
+			.put(
+				"ref",
+				"https://docs.italia.it/italia/spid/spid-regole-tecniche-oidc/it/stabile/index.html");
+
+
+		JWK jwk = JWTHelper.getFirstJWK(jwkSet);
+
+		RSAKey rsaKey = (RSAKey)jwk;
+
+		JWSSigner signer = new RSASSASigner(rsaKey);
+		JWSAlgorithm alg = JWSAlgorithm.RS256;
+
+		// Prepare JWS object with the payload
+
+		JWSHeader header = new JWSHeader.Builder(alg)
+			.keyID(jwk.getKeyID())
+			.type(new JOSEObjectType("trust-mark+jwt"))
+			.build();
+
+		JWSObject jwsObject = new JWSObject(header, new Payload(payload.toString()));
+
+		// Compute the signature
+		jwsObject.sign(signer);
+
+		// Serialize to compact form
+		String jws = jwsObject.serialize();
+
+		JSONObject trustMark = new JSONObject()
+			.put("id", id)
+			.put("trust_mark", jws);
+
+		return trustMark;
+	}
 }

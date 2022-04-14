@@ -20,6 +20,7 @@ import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 
 import it.spid.cie.oidc.config.OIDCConstants;
+import it.spid.cie.oidc.helper.EntityHelper;
 import it.spid.cie.oidc.helper.JWTHelper;
 import it.spid.cie.oidc.test.util.RPTestUtils;
 import it.spid.cie.oidc.util.JSONUtil;
@@ -164,7 +165,7 @@ public class TestTrustMark {
 				WireMock.get(
 					"/" + OIDCConstants.OIDC_FEDERATION_WELLKNOWN_URL
 				).willReturn(
-					WireMock.ok(mockedTrustAnchorEntityConfigurationBad())
+					WireMock.ok(mockedTrustAnchorEntityConfiguration2())
 				));
 
 			JWTHelper jwtHelper = new JWTHelper(RPTestUtils.getOptions());
@@ -191,6 +192,50 @@ public class TestTrustMark {
 		assertFalse(res);
 	}
 
+	@Test
+	public void test_validate() {
+		boolean catched = false;
+		boolean res = false;
+
+		try {
+			JWKSet jwkSet = createJWKSet();
+
+			// TrustAnchor Entity Configuration
+
+			wireMockServer.stubFor(
+				WireMock.get(
+					"/" + OIDCConstants.OIDC_FEDERATION_WELLKNOWN_URL
+				).willReturn(
+					WireMock.ok(mockedTrustAnchorEntityConfiguration3(jwkSet))
+				));
+
+			JWTHelper jwtHelper = new JWTHelper(RPTestUtils.getOptions());
+
+			JSONObject jwks = new JSONObject(jwkSet.toJSONObject(false));
+			JSONObject payload = new JSONObject()
+				.put("id", "id")
+				.put("iss", RPTestUtils.TRUST_ANCHOR)
+				.put("sub", RPTestUtils.TRUST_ANCHOR);
+
+			String jwt = RPTestUtils.createJWS(payload, jwks);
+
+			TrustMark tm = new TrustMark(jwt, jwtHelper);
+
+			String ec = EntityHelper.getEntityConfiguration(RPTestUtils.TRUST_ANCHOR);
+
+			EntityConfiguration entityEC = new EntityConfiguration(ec, jwtHelper);
+
+			res = tm.validate(entityEC);
+		}
+		catch (Exception e) {
+			catched = true;
+		}
+
+		assertFalse(catched);
+		assertTrue(res);
+
+	}
+
 	private static JWKSet createJWKSet() throws Exception {
 		RSAKey rsaKey1 = JWTHelper.createRSAKey(JWSAlgorithm.RS256, KeyUse.SIGNATURE);
 		//RSAKey rsaKey2 = JWTHelper.createRSAKey(null, KeyUse.ENCRYPTION);
@@ -198,8 +243,40 @@ public class TestTrustMark {
 		return new JWKSet(Arrays.asList(rsaKey1));
 	}
 
-	public static String mockedTrustAnchorEntityConfigurationBad() throws Exception {
-		JSONObject publicJwks = new JSONObject(createJWKSet().toJSONObject());
+	/**
+	 * Create trust anchor mocked entity configuration with wrong jwks
+	 *
+	 * @return
+	 * @throws Exception
+	 */
+	private static String mockedTrustAnchorEntityConfiguration2()
+		throws Exception {
+
+		JSONObject privateJwks = RPTestUtils.mockedTrustAnchorPrivateJWKS();
+
+		JWKSet jwkSet = createJWKSet();
+
+		JSONObject publicJwks = new JSONObject(jwkSet.toJSONObject());
+
+		return doMockedTrustAnchorEntityConfiguration(privateJwks, publicJwks);
+	}
+
+	private static String mockedTrustAnchorEntityConfiguration3(JWKSet jwkSet)
+		throws Exception {
+
+		if (jwkSet == null) {
+			jwkSet = createJWKSet();
+		}
+
+		JSONObject privateJwks = new JSONObject(jwkSet.toJSONObject(false));
+		JSONObject publicJwks = new JSONObject(jwkSet.toJSONObject());
+
+		return doMockedTrustAnchorEntityConfiguration(privateJwks, publicJwks);
+	}
+
+	private static String doMockedTrustAnchorEntityConfiguration(
+			JSONObject privateJwks, JSONObject publicJwks)
+		throws Exception {
 
 		JSONObject payload = new JSONObject()
 			.put("iat", RPTestUtils.makeIssuedAt())
@@ -236,9 +313,7 @@ public class TestTrustMark {
 		payload.put("trust_marks_issuers", trustMarksIssuers);
 		payload.put("constraints", new JSONObject().put("max_path_length", 1));
 
-		JSONObject jwks = RPTestUtils.mockedTrustAnchorPrivateJWKS();
-
-		return RPTestUtils.createJWS(payload, jwks);
+		return RPTestUtils.createJWS(payload, privateJwks);
 	}
 
 
