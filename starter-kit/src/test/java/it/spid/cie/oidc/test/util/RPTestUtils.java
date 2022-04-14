@@ -1,20 +1,21 @@
 package it.spid.cie.oidc.test.util;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.nimbusds.jose.EncryptionMethod;
+import com.nimbusds.jose.JWEAlgorithm;
+import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.JWEObject;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.Payload;
+import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -30,6 +31,35 @@ public class RPTestUtils extends TestUtils {
 	public static String TRUST_ANCHOR = "http://127.0.0.1:18000/";
 	public static String SPID_PROVIDER = "http://127.0.0.1:18000/oidc/op/";
 	public static String RELYING_PARTY = "http://127.0.0.1:18080/oidc/rp/";
+
+	public static String createJWE(
+			JSONObject payload, JSONObject senderJwks, String recipientJWK)
+		throws Exception {
+
+		String jws = createJWS(payload, senderJwks);
+
+		//JWKSet recipientJWKSet = JWTHelper.getJWKSetFromJSON(recipientJwks);
+		//JWK jwk = JWTHelper.getFirstJWK(recipientJWKSet);
+		//RSAKey rsaKey = (RSAKey)jwk;
+
+		RSAKey rsaKey = JWTHelper.parseRSAKey(recipientJWK);
+
+		JWEHeader header = new JWEHeader.Builder(
+				JWEAlgorithm.RSA_OAEP_256, EncryptionMethod.A256GCM
+			).keyID(
+				rsaKey.getKeyID()
+			).contentType(
+				"JWT"  // required to indicate nested JWT
+			).build();
+
+		JWEObject jweObject = new JWEObject(header, new Payload(jws));
+
+		// Encrypt with the recipient's public key
+		jweObject.encrypt(new RSAEncrypter(rsaKey.toRSAPublicKey()));
+
+		// Serialise to JWE compact form
+		return jweObject.serialize();
+	}
 
 	public static String createJWS(JSONObject payload, JSONObject jwks)
 		throws Exception {

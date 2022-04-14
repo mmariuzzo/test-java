@@ -15,7 +15,6 @@ import org.junit.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.nimbusds.jose.util.ArrayUtils;
 
 import it.spid.cie.oidc.config.OIDCConstants;
 import it.spid.cie.oidc.helper.JWTHelper;
