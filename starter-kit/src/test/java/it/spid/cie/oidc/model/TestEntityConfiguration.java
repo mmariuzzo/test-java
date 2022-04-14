@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,15 +14,36 @@ import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.nimbusds.jose.jwk.JWKSet;
 
+import it.spid.cie.oidc.config.OIDCConstants;
 import it.spid.cie.oidc.helper.JWTHelper;
 import it.spid.cie.oidc.test.util.RPTestUtils;
 import it.spid.cie.oidc.util.JSONUtil;
 
 public class TestEntityConfiguration {
+
+	private static WireMockServer wireMockServer;
+
+	@BeforeClass
+	public static void setUp() throws IOException {
+		wireMockServer = new WireMockServer(18000);
+
+		wireMockServer.start();
+
+		System.out.println("mock=" + wireMockServer.baseUrl());
+	}
+
+	@AfterClass
+	public static void tearDown() throws IOException {
+		wireMockServer.stop();
+	}
 
 	@Test
 	public void testEntityConfigurationClass() {
@@ -301,12 +323,13 @@ public class TestEntityConfiguration {
 	public void test_getSuperiors() {
 		JWTHelper jwtHelper = null;
 		EntityConfiguration ec = null;
+		String es = null;
 		boolean catched = false;
 
 		try {
 			jwtHelper = new JWTHelper(RPTestUtils.getOptions());
 
-			String es = mockedSPIDProviderEntityStatement1();
+			es = mockedSPIDProviderEntityStatement1();
 
 			ec = new EntityConfiguration(es, jwtHelper);
 		}
@@ -321,6 +344,46 @@ public class TestEntityConfiguration {
 		Map<String, EntityConfiguration> res = null;
 
 		try {
+			wireMockServer.resetAll();
+
+			// TrustAnchor Entity Configuration
+
+			wireMockServer.stubFor(
+				WireMock.get(
+					"/" + OIDCConstants.OIDC_FEDERATION_WELLKNOWN_URL
+				).willReturn(
+					WireMock.ok(RPTestUtils.mockedTrustAnchorEntityConfiguration())
+				));
+
+
+			List<EntityConfiguration> superiorHints = new ArrayList<>();
+
+			res = ec.getSuperiors(1, superiorHints);
+		}
+		catch (Exception e) {
+			catched = true;
+		}
+
+		assertFalse(catched);
+		assertTrue(res.size() == 1);
+
+		catched = false;
+		res = null;
+
+		try {
+			wireMockServer.resetAll();
+
+			// TrustAnchor Entity Configuration
+
+			wireMockServer.stubFor(
+				WireMock.get(
+					"/" + OIDCConstants.OIDC_FEDERATION_WELLKNOWN_URL
+				).willReturn(
+					WireMock.badRequest()
+				));
+
+			ec = new EntityConfiguration(es, jwtHelper);
+
 			List<EntityConfiguration> superiorHints = new ArrayList<>();
 
 			res = ec.getSuperiors(1, superiorHints);
@@ -333,7 +396,101 @@ public class TestEntityConfiguration {
 		assertTrue(res.size() == 0);
 	}
 
-	public static String mockedSPIDProviderEntityStatement1() throws Exception {
+	@Test
+	public void test_validateByAllowedTrustMarks() {
+		JWTHelper jwtHelper = null;
+		EntityConfiguration ec = null;
+		EntityConfiguration ta = null;
+		boolean catched = false;
+
+		try {
+			jwtHelper = new JWTHelper(RPTestUtils.getOptions());
+
+			String es = mockedSPIDProviderEntityStatement4();
+
+			String es2 = RPTestUtils.mockedTrustAnchorEntityConfiguration();
+
+			ta = new EntityConfiguration(es2, jwtHelper);
+
+			ec = new EntityConfiguration(es, ta, jwtHelper);
+		}
+		catch (Exception e) {
+			catched = true;
+		}
+
+		assertFalse(catched);
+		assertNotNull(ec);
+
+		catched = false;
+		boolean res = false;
+
+		try {
+			ec.setAllowedTrustMarks(new String[0]);
+
+			res = ec.validateByAllowedTrustMarks();
+		}
+		catch (Exception e) {
+			catched = true;
+		}
+
+		assertFalse(catched);
+		assertTrue(res);
+
+		catched = false;
+		res = false;
+
+		try {
+			ec.setAllowedTrustMarks(new String[] { "test" });
+
+			res = ec.validateByAllowedTrustMarks();
+		}
+		catch (Exception e) {
+			catched = true;
+		}
+
+		assertFalse(catched);
+		assertFalse(res);
+
+		catched = false;
+		res = false;
+
+		try {
+			String es = mockedSPIDProviderEntityStatement5();
+
+			ec = new EntityConfiguration(es, ta, jwtHelper);
+
+			ec.setAllowedTrustMarks(new String[] { "test" });
+
+			res = ec.validateByAllowedTrustMarks();
+		}
+		catch (Exception e) {
+			catched = true;
+		}
+
+		assertTrue(catched);
+		assertFalse(res);
+
+		catched = false;
+		res = false;
+
+		try {
+			String es = mockedSPIDProviderEntityStatement6();
+
+			ec = new EntityConfiguration(es, ta, jwtHelper);
+
+			ec.setAllowedTrustMarks(new String[] { "test" });
+
+			res = ec.validateByAllowedTrustMarks();
+		}
+		catch (Exception e) {
+			catched = true;
+		}
+
+		assertTrue(catched);
+		assertFalse(res);
+	}
+
+	private String mockedSPIDProviderEntityStatement1() throws Exception {
 		JSONObject payload = new JSONObject()
 			.put("iat", RPTestUtils.makeIssuedAt())
 			.put("exp", RPTestUtils.makeExpiresOn())
@@ -411,7 +568,9 @@ public class TestEntityConfiguration {
 		JSONObject publicJwks = new JSONObject(jwkSet.toJSONObject(true));
 		JSONObject privateJwks = RPTestUtils.mockedSPIDProviderPrivateJWKS();
 
-		return doMockedSPIDProviderEntityStatement(publicJwks, privateJwks);
+		JSONObject payload = mockedSPIDProviderEntityStatementJSON(publicJwks);
+
+		return RPTestUtils.createJWS(payload, privateJwks);
 	}
 
 	private String mockedSPIDProviderEntityStatement3() throws Exception {
@@ -420,10 +579,57 @@ public class TestEntityConfiguration {
 		JSONObject publicJwks = new JSONObject(jwkSet.toJSONObject(true));
 		JSONObject privateJwks = new JSONObject(jwkSet.toJSONObject(false));
 
-		return doMockedSPIDProviderEntityStatement(publicJwks, privateJwks);
+		JSONObject payload = mockedSPIDProviderEntityStatementJSON(publicJwks);
+
+		return RPTestUtils.createJWS(payload, privateJwks);
 	}
 
-	private static String mockedTrustAnchorEntityConfigurationC1()
+	private String mockedSPIDProviderEntityStatement4() throws Exception {
+		JWKSet jwkSet = RPTestUtils.createJWKSet();
+
+		JSONObject publicJwks = new JSONObject(jwkSet.toJSONObject(true));
+		JSONObject privateJwks = new JSONObject(jwkSet.toJSONObject(false));
+
+		JSONObject payload = mockedSPIDProviderEntityStatementJSON(publicJwks);
+
+		payload.remove("trust_marks");
+
+		return RPTestUtils.createJWS(payload, privateJwks);
+	}
+
+	private String mockedSPIDProviderEntityStatement5() throws Exception {
+		JWKSet jwkSet = RPTestUtils.createJWKSet();
+
+		JSONObject publicJwks = new JSONObject(jwkSet.toJSONObject(true));
+		JSONObject privateJwks = new JSONObject(jwkSet.toJSONObject(false));
+
+		JSONObject payload = mockedSPIDProviderEntityStatementJSON(publicJwks);
+
+		payload.remove("trust_marks");
+
+		payload.put("trust_marks", new JSONArray().put("test"));
+
+		return RPTestUtils.createJWS(payload, privateJwks);
+	}
+
+	private String mockedSPIDProviderEntityStatement6() throws Exception {
+		JWKSet jwkSet = RPTestUtils.createJWKSet();
+
+		JSONObject publicJwks = new JSONObject(jwkSet.toJSONObject(true));
+		JSONObject privateJwks = new JSONObject(jwkSet.toJSONObject(false));
+
+		JSONObject payload = mockedSPIDProviderEntityStatementJSON(publicJwks);
+
+		payload.remove("trust_marks");
+
+		JSONObject trustMark = new JSONObject().put("id", "test");
+
+		payload.put("trust_marks", new JSONArray().put(trustMark));
+
+		return RPTestUtils.createJWS(payload, privateJwks);
+	}
+
+	private String mockedTrustAnchorEntityConfigurationC1()
 		throws Exception {
 
 		JSONObject payload = new JSONObject()
@@ -466,7 +672,7 @@ public class TestEntityConfiguration {
 		return RPTestUtils.createJWS(payload, jwks);
 	}
 
-	private static String mockedTrustAnchorEntityConfigurationC2()
+	private String mockedTrustAnchorEntityConfigurationC2()
 		throws Exception {
 
 		JSONObject payload = new JSONObject()
@@ -509,8 +715,8 @@ public class TestEntityConfiguration {
 
 		return RPTestUtils.createJWS(payload, jwks);
 	}
-	private String doMockedSPIDProviderEntityStatement(
-			JSONObject publicJwks, JSONObject privateJwks)
+
+	private JSONObject mockedSPIDProviderEntityStatementJSON(JSONObject publicJwks)
 		throws Exception {
 
 		JSONObject payload = new JSONObject()
@@ -575,7 +781,7 @@ public class TestEntityConfiguration {
 
 		payload.put("trust_marks", trustMarks);
 
-		return RPTestUtils.createJWS(payload, privateJwks);
+		return payload;
 	}
 
 
