@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +24,9 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.nimbusds.jose.jwk.JWKSet;
 
 import it.spid.cie.oidc.config.OIDCConstants;
+import it.spid.cie.oidc.handler.RelyingPartyHandler;
 import it.spid.cie.oidc.helper.JWTHelper;
+import it.spid.cie.oidc.schemas.SPIDClaimItem;
 import it.spid.cie.oidc.test.util.RPTestUtils;
 import it.spid.cie.oidc.util.JSONUtil;
 
@@ -488,6 +491,83 @@ public class TestEntityConfiguration {
 
 		assertTrue(catched);
 		assertFalse(res);
+
+		catched = false;
+		res = false;
+
+		try {
+			wireMockServer.resetAll();
+
+			// TrustMark Issuer1 Entity Configuration
+
+			wireMockServer.stubFor(
+				WireMock.get(
+					"/tmi1/" + OIDCConstants.OIDC_FEDERATION_WELLKNOWN_URL
+				).willReturn(
+					WireMock.ok(RPTestUtils.mockedTrustMarkIssuer1EntityConfiguration())
+				));
+
+			String es = mockedSPIDProviderEntityStatement7();
+
+			ec = new EntityConfiguration(es, ta, jwtHelper);
+
+			ec.setAllowedTrustMarks(
+				new String[] {
+					"https://www.spid.gov.it/certification/rp/public",
+					"https://www.spid.gov.it/certification/rp/private"
+				});
+
+			res = ec.validateByAllowedTrustMarks();
+		}
+		catch (Exception e) {
+			catched = true;
+		}
+
+		assertFalse(catched);
+		assertTrue(ec.getVerifiedTrustMarks().size() == 1);
+	}
+
+	@Test
+	public void test_isTrustMarkAllowed() {
+		JWTHelper jwtHelper = null;
+		EntityConfiguration ec  = null;
+		Method privateMethod = null;
+
+		boolean catched = false;
+
+		try {
+			jwtHelper = new JWTHelper(RPTestUtils.getOptions());
+
+			String es = RPTestUtils.mockedSPIDProviderEntityStatement();
+
+			ec = new EntityConfiguration(es, jwtHelper);
+
+			privateMethod = EntityConfiguration.class.getDeclaredMethod(
+				"isTrustMarkAllowed", JSONObject.class);
+
+			privateMethod.setAccessible(true);
+		}
+		catch (Exception e) {
+			catched = true;
+		}
+
+		assertFalse(catched);
+
+		boolean returnValue = false;
+		catched = false;
+
+		try {
+			JSONObject trustMark = new JSONObject();
+
+			returnValue = (boolean) privateMethod.invoke(ec, trustMark);
+		}
+		catch (Exception e) {
+			System.err.println(e);
+			catched = true;
+		}
+
+		assertFalse(catched);
+		assertTrue(returnValue);
 	}
 
 	private String mockedSPIDProviderEntityStatement1() throws Exception {
@@ -625,6 +705,32 @@ public class TestEntityConfiguration {
 		JSONObject trustMark = new JSONObject().put("id", "test");
 
 		payload.put("trust_marks", new JSONArray().put(trustMark));
+
+		return RPTestUtils.createJWS(payload, privateJwks);
+	}
+
+	private String mockedSPIDProviderEntityStatement7() throws Exception {
+		//JWKSet jwkSet = RPTestUtils.createJWKSet();
+		//JSONObject publicJwks = new JSONObject(jwkSet.toJSONObject(true));
+		//JSONObject privateJwks = new JSONObject(jwkSet.toJSONObject(false));
+		JSONObject publicJwks = RPTestUtils.mockedTrustAnchorPublicJWKS();
+		JSONObject privateJwks = RPTestUtils.mockedTrustAnchorPrivateJWKS();
+
+		JWKSet jwkSet = JWKSet.parse(privateJwks.toMap());
+
+		JSONObject payload = mockedSPIDProviderEntityStatementJSON(publicJwks);
+
+		payload.remove("trust_marks");
+
+		JSONObject trustMark1 = RPTestUtils.mockedTrustMark(
+			jwkSet, "https://www.spid.gov.it/certification/rp/public",
+			RPTestUtils.TM_ISSUER1, null);
+
+			JSONObject trustMark2 = RPTestUtils.mockedTrustMark(
+			jwkSet, "https://www.spid.gov.it/certification/rp/private",
+			"https://public.intermediary.spid.local", null);
+
+		payload.put("trust_marks", new JSONArray().put(trustMark1).put(trustMark2));
 
 		return RPTestUtils.createJWS(payload, privateJwks);
 	}

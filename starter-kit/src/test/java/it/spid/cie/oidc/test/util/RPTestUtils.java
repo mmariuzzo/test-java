@@ -27,13 +27,16 @@ import com.nimbusds.jose.jwk.RSAKey;
 import it.spid.cie.oidc.config.RelyingPartyOptions;
 import it.spid.cie.oidc.helper.JWTHelper;
 import it.spid.cie.oidc.util.ArrayUtil;
+import it.spid.cie.oidc.util.GetterUtil;
 import it.spid.cie.oidc.util.JSONUtil;
 
 public class RPTestUtils extends TestUtils {
 
 	public static String TRUST_ANCHOR = "http://127.0.0.1:18000/";
 	public static String SPID_PROVIDER = "http://127.0.0.1:18000/oidc/op/";
-	public static String RELYING_PARTY = "http://127.0.0.1:18080/oidc/rp/";
+	public static String RELYING_PARTY = "http://127.0.0.1:18000/oidc/rp/";
+	public static String TM_ISSUER1 = "http://127.0.0.1:18000/tmi1/";
+	public static String TM_ISSUER2 = "http://127.0.0.1:18000/tmi2/";
 
 	public static String createJWE(
 			JSONObject payload, JSONObject senderJwks, String recipientJWK)
@@ -322,17 +325,54 @@ public class RPTestUtils extends TestUtils {
 		JSONObject trustMarksIssuers = new JSONObject()
 			.put(
 				"https://www.spid.gov.it/certification/rp/public", JSONUtil.asJSONArray(
-					"https://registry.spid.agid.gov.it",
-					"https://public.intermediary.spid.it"))
+					TM_ISSUER1, TM_ISSUER2))
 			.put(
 				"https://www.spid.gov.it/certification/rp/private", JSONUtil.asJSONArray(
-					"https://registry.spid.agid.gov.it",
-					"https://private.other.intermediary.it"))
+					TM_ISSUER1, TM_ISSUER2))
 			.put(
 				"https://sgd.aa.it/onboarding", JSONUtil.asJSONArray(
-					"https://sgd.aa.it"));
+					TM_ISSUER1));
 
 		payload.put("trust_marks_issuers", trustMarksIssuers);
+		payload.put("constraints", new JSONObject().put("max_path_length", 1));
+
+		JSONObject jwks = mockedTrustAnchorPrivateJWKS();
+
+		return createJWS(payload, jwks);
+	}
+
+	public static String mockedTrustMarkIssuer1EntityConfiguration() throws Exception {
+		JSONObject payload = new JSONObject()
+			.put("iat", makeIssuedAt())
+			.put("exp", makeExpiresOn())
+			.put("iss", TM_ISSUER1)
+			.put("sub", TM_ISSUER1)
+			.put("jwks", mockedTrustAnchorPublicJWKS());
+
+		JSONObject trustAnchorMetadata = new JSONObject()
+			.put("contacts", JSONUtil.asJSONArray("ta@localhost"))
+			.put("federation_fetch_endpoint", TM_ISSUER1 + "fetch/")
+			.put("federation_resolve_endpoint", TM_ISSUER1 + "resolve/")
+			.put("federation_status_endpoint", TM_ISSUER1 + "trust_mask_status/")
+			.put("homepage_uri", TM_ISSUER1)
+			.put("name", "example TA")
+			.put("federation_list_endpoint", TM_ISSUER1 + "list/");
+
+		payload.put(
+			"metadata", new JSONObject().put("federation_entity", trustAnchorMetadata));
+
+//		JSONObject trustMarksIssuers = new JSONObject()
+//			.put(
+//				"https://www.spid.gov.it/certification/rp/public", JSONUtil.asJSONArray(
+//					TM_ISSUER1, TM_ISSUER2))
+//			.put(
+//				"https://www.spid.gov.it/certification/rp/private", JSONUtil.asJSONArray(
+//					TM_ISSUER1, TM_ISSUER2))
+//			.put(
+//				"https://sgd.aa.it/onboarding", JSONUtil.asJSONArray(
+//					TM_ISSUER1));
+//
+//		payload.put("trust_marks_issuers", trustMarksIssuers);
 		payload.put("constraints", new JSONObject().put("max_path_length", 1));
 
 		JSONObject jwks = mockedTrustAnchorPrivateJWKS();
@@ -349,15 +389,24 @@ public class RPTestUtils extends TestUtils {
 	}
 
 	public static JSONObject mockedTrustMark(JWKSet jwkSet, String id) throws Exception {
+		return mockedTrustMark(jwkSet, id, null, null);
+	}
+
+	public static JSONObject mockedTrustMark(
+			JWKSet jwkSet, String id, String iss, String sub)
+		throws Exception {
+
 		if (jwkSet == null) {
 			jwkSet = createJWKSet();
 		}
 
 		JSONObject payload = new JSONObject()
-			.put("iss", TRUST_ANCHOR)
-			.put("sub", SPID_PROVIDER)
+			.put("iss", GetterUtil.getString(iss, TRUST_ANCHOR))
+			.put("sub", GetterUtil.getString(iss, SPID_PROVIDER))
 			.put("iat", makeIssuedAt())
-			.put("id", "https://www.spid.gov.it/certification/op")
+			.put(
+				"id", GetterUtil.getString(
+					id, "https://www.spid.gov.it/certification/op"))
 			.put("mark", "https://www.agid.gov.it/themes/custom/agid/logo.svg")
 			.put(
 				"ref",
